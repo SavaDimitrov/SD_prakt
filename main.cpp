@@ -2,85 +2,94 @@
 #include <fstream>
 #include <cstring>
 
-
 using namespace std;
 
-bool writeInFile(char* fileName) {
-	ofstream output(fileName, ios::app);
+class City {
+	char* name;
+	int population;
 
-	if (output) {
-		char buff[100];
-		cin.getline(buff, 100);
-		for (int i = 0; i < 5; i++) {
-			output << buff << endl;
+	void removeCity() {
+		delete name;
+		name = nullptr;
+	}
+
+public:
+
+	City(char* _name = NULL, int _population = 0) {
+		setName(_name);
+		population = _population;
+
+	}
+
+	void setName(char* newName) {
+		if (name != nullptr) {
+			removeCity();
 		}
 
-		return true;
-	}
-	else {
-		return false;
+		int length = strlen(newName) + 1;
+		name = new char[length];
+		strcpy(name, newName);
 	}
 
-	output.close();
+	const char* getName() const { return name; }
+	int getPopulation() const { return population; }
+
+	~City() {
+		removeCity();
+	}
+};
+
+void writeToBin(City* city, int numOfCities, char* fileName) {
+	ofstream myFile(fileName, ios::out | ios::binary);
+
+	if (fileName) {
+		for (int i = 0; i < numOfCities; i++)
+		{
+			int tmp = city[i].getPopulation();
+
+			int cityNameLen = strlen(city[i].getName()) + 1;
+			myFile.write((char*)&cityNameLen, sizeof(cityNameLen));
+			myFile.write((char*)city[i].getName(), cityNameLen);
+			myFile.write((char*)&tmp, sizeof(city[i].getPopulation()));
+		}
+	}
+	else cout << "Error!\n";
+
+	myFile.close();
 }
 
-bool readFromFile(char* fileName) {
-	ifstream input(fileName);
+void readFromBin(char* fileName) {
+	ifstream myFile(fileName, ios::in | ios::binary);
 
-	if (input) {
-		
-		char buffer[100];
+	if (myFile) {
+		while (!myFile.eof()) {
+			int length;
+			myFile.read((char*)&length, sizeof(length));
 
-		while (!input.eof()) {
-			buffer[0] = '\0';
-			input.getline(buffer, 100);
-			cout << buffer << endl;
+			char* city = new char[length + 1];
+			myFile.read(city, length);
+			int population;
+			myFile.read((char*)&population, sizeof(population));
+
+			cout << "City name:" << city << '\n' << "It's population: " << population << endl;
+
+			delete city;
 		}
-
-		return true;
-	}
-	else {
-		return false;
 	}
 
-	input.close();
+	myFile.close();
 }
 
 int main() {
-	//fstream stream("asdasd.txt", ios::in); //samo mojem da chetem, vupreki che e fstream i po default ima in | out
-	//ifstream stream1("asdasd1.txt", ios::out); //greshka! nqma metod za <<
-	//ofstream stream2("asdasd2.tst")
-	
-	fstream file("practice.txt", ios::in | ios::out | ios::trunc);
 
-	writeInFile("practice.txt");
-	readFromFile("practice.txt");
+	ifstream binFile("cities.dat", ios::in | ios::binary);
 
-	cout << "Do you want to delete the file:: Yes || No " << endl;
-	char answer[5];
-	cin.getline(answer, 5);
+	City city1("Sofia", 5000);
+	City city2("Plovdiv", 2000);
+	int len = 2;
+	City cities[] = { city1, city2 };
 
-	if (strcmp(answer, "Yes")) {
-		file.trunc;
-	}
-	else {
-		cout << "You kept the file." << endl;
-	}
-
-
-	///*
-	//	tellg - dava ukazatelq na tekushtata poziciq
-	//*/
-	//ifstream input;
-	//streampos current = input.tellg(); //dava ni tekushtata poziciq
-	//current += 20; // kazva na ukazatelq da otide 20 simvola napred.
-	
-	//ifstream i1("....txt", ios::ate)
-	//i1.seekg(end);
-
-	//input.seekg(current); //tursi okazanata poziciq
-	//input.seekg(ios::end); //otiva nakraq na faila
-	//streampos end = input.tellg();
+	writeToBin(cities, len, "cities.dat");
 
 	return 0;
 }
